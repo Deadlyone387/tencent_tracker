@@ -23,13 +23,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Chrome & Chromedriver
+      - name: Install Chromium and Chromedriver
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
-          if [ ! -f /usr/bin/chromedriver ] || [ "$(readlink -f /usr/bin/chromedriver)" != "$(readlink -f /usr/lib/chromium-browser/chromedriver)" ]; then
-            sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
-          fi
+          which chromedriver
+          chromedriver --version
+
+      - name: Set environment variables
+        run: echo "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" >> $GITHUB_ENV
 
       - name: Run bot
         run: python manhua_bot.py
