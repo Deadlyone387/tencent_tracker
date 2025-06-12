@@ -1,3 +1,4 @@
-selenium
 beautifulsoup4
 requests
+selenium
+googletrans==4.0.0-rc1
