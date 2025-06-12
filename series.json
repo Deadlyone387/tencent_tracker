@@ -1,14 +1,16 @@
 [
   {
-    "name": "Lord of Summoning When the World Changes",
+    "title": "Lord of Summoning When the World Changes",
     "url": "https://ac.qq.com/Comic/ComicInfo/id/656637",
-    "latest": "",
-    "site": "tencent"
+    "site": "tencent",
+    "thumbnail": "https://some-thumbnail-link.jpg",
+    "last_chapter": "第11话 被盯上了！"
   },
   {
-    "name": "Lan Ke Qi Yuan",
-    "url": "https://ac.qq.com/Comic/comicInfo/id/649916",
-    "latest": "",
-    "site": "tencent"
+    "title": "Lan Ke Qi Yuan",
+    "url": "https://ac.qq.com/Comic/ComicInfo/id/649916",
+    "site": "tencent",
+    "thumbnail": "https://some-thumbnail-link.jpg",
+    "last_chapter": "第5话 传说再起"
   }
 ]
