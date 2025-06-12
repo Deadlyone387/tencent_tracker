@@ -1,4 +1,4 @@
-beautifulsoup4
+selenium==4.21.0
 requests
-selenium
-googletrans==4.0.0-rc1
+beautifulsoup4
+deep-translator
