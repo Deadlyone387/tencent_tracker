@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from googletrans import Translator
 
@@ -23,11 +24,13 @@ def save_series(series):
 
 def get_latest_chapter_tencent(url):
     options = Options()
+    options.binary_location = "/usr/bin/chromium-browser"  # Use Chromium instead of Chrome
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    driver = webdriver.Chrome(options=options)
+
+    service = Service("/usr/bin/chromedriver")
+    driver = webdriver.Chrome(service=service, options=options)
 
     driver.get(url)
     time.sleep(3)
@@ -107,4 +110,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
