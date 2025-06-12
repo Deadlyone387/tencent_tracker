@@ -2,22 +2,12 @@ import os
 import json
 import time
 import requests
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from bs4 import BeautifulSoup
-from datetime import datetime
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from deep_translator import GoogleTranslator
-
-TRANSLATE = True
-
-DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-}
 
 def load_series():
     with open("series.json", "r", encoding="utf-8") as f:
@@ -30,101 +20,90 @@ def save_series(series):
 def get_latest_chapter_tencent(url):
     options = Options()
     options.add_argument("--headless")
+    options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-blink-features=AutomationControlled")
 
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
     driver.get(url)
+    time.sleep(3)
 
-    try:
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'a[href^="/ComicView/index/"]'))
-        )
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    driver.quit()
 
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        chapter_links = soup.select('a[href^="/ComicView/index/"]')
-        filtered = [a for a in chapter_links if a.text.strip().startswith("第")]
-
-        if not filtered:
-            print("⚠️ No chapter found in HTML!")
-            return None
-
-        latest = filtered[0]
-        chapter_url = "https://ac.qq.com" + latest["href"]
-        chapter_title = latest.text.strip()
-        return chapter_url, chapter_title
-
-    except Exception as e:
-        print("⚠️ Error during Tencent scrape:", e)
+    chapter_link = soup.select_one("a[href^='/ComicView/index/id/']")
+    if not chapter_link:
+        print("\u26a0\ufe0f No chapter found in HTML!")
         return None
-    finally:
-        driver.quit()
 
-def send_discord_notification(title, chapter_url, chapter_title, thumbnail_url):
+    chapter_url = "https://ac.qq.com" + chapter_link.get("href")
+    chapter_title = chapter_link.get("title") or chapter_link.text.strip()
+
+    return chapter_url, chapter_title
+
+def send_discord_notification(title, url, translated_title, thumbnail):
+    webhook_url = os.getenv("DISCORD_WEBHOOK")
+    if not webhook_url:
+        print("\u26a0\ufe0f Discord webhook not set.")
+        return
+
     embed = {
-        "title": title,
-        "url": chapter_url,
-        "description": f"**New Chapter Released!**\n{chapter_title}",
-        "color": 0x00ff00,
-        "thumbnail": {"url": thumbnail_url},
-        "timestamp": datetime.utcnow().isoformat()
+        "title": translated_title or title,
+        "description": f"[{title}]({url})",
+        "url": url,
+        "color": 0x00ffcc,
+        "thumbnail": {"url": thumbnail},
+        "footer": {"text": "Tencent Tracking Bot"},
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")
     }
 
-    if TRANSLATE:
-        try:
-            translated = GoogleTranslator(source='zh-CN', target='en').translate(chapter_title)
-            embed["fields"] = [{
-                "name": "Translated Title",
-                "value": translated,
-                "inline": False
-            }]
-        except Exception as e:
-            print("⚠️ Translation failed:", e)
-
     data = {"embeds": [embed]}
-    try:
-        response = requests.post(DISCORD_WEBHOOK, json=data)
-        if response.status_code != 204:
-            print("⚠️ Discord webhook failed:", response.text)
-    except Exception as e:
-        print("⚠️ Discord request failed:", e)
+    response = requests.post(webhook_url, json=data)
+    if response.status_code != 204:
+        print(f"\u26a0\ufe0f Discord request failed: {response.text}")
+
 
 def main():
-    series = load_series()
+    series_list = load_series()
     updated = False
 
-    for item in series:
-        title = item["title"]
-        url = item["url"]
-        site = item["site"]
-        last_chapter = item.get("last_chapter", "")
-        thumbnail_url = item.get("thumbnail", "")
+    for item in series_list:
+        title = item.get("title")
+        url = item.get("url")
+        site = item.get("site")
+        last_seen = item.get("latest_chapter", "")
+        thumbnail = item.get("thumbnail")
 
-        print(f"🔍 Checking {title}...")
+        print(f"\ud83d\udd0d Checking {title}...")
 
         if site == "tencent":
             result = get_latest_chapter_tencent(url)
         else:
-            print(f"⚠️ Unknown site for {title}: {site}")
+            print(f"\u26a0\ufe0f Unsupported site: {site}")
             continue
 
-        if result is None:
-            print(f"⚠️ Skipped {title} due to missing chapter info.")
+        if not result:
+            print(f"\u26a0\ufe0f Skipped {title} due to missing chapter info.")
             continue
 
         latest_url, chapter_title = result
 
-        if chapter_title != last_chapter:
-            print(f"📢 New chapter for {title}: {chapter_title}")
-            send_discord_notification(title, latest_url, chapter_title, thumbnail_url)
-            item["last_chapter"] = chapter_title
+        if chapter_title != last_seen:
+            print(f"\ud83d\udce2 New chapter for {title}: {chapter_title}")
+            try:
+                translated_title = GoogleTranslator(source='auto', target='en').translate(chapter_title)
+            except Exception as e:
+                print(f"\u26a0\ufe0f Translation failed: {e}")
+                translated_title = None
+
+            send_discord_notification(title, latest_url, translated_title, thumbnail)
+            item["latest_chapter"] = chapter_title
             updated = True
         else:
-            print(f"✅ No update for {title}")
+            print(f"\u2705 No update for {title}")
 
     if updated:
-        save_series(series)
+        save_series(series_list)
 
 if __name__ == "__main__":
     main()
