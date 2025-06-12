@@ -28,6 +28,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
           sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+      
 
       - name: Set environment variables
         run: |
@@ -37,3 +38,7 @@ jobs:
         run: python manhua_bot.py
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Fix chromedriver path
+        run: sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver || true
+
