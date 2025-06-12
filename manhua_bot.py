@@ -40,11 +40,13 @@ def get_latest_chapter_tencent(url):
 
     chapter = soup.select_one("a.comic-chapter__item")
     if chapter:
-        href = chapter.get("href", "")
-        title = chapter.get_text(strip=True)
-        return "https://ac.qq.com" + href, title
+       href = chapter.get("href", "")
+       title = chapter.get_text(strip=True)
+       print(f"➡️ Found chapter: {title}, URL: https://ac.qq.com{href}")  # Add this
+       return "https://ac.qq.com" + href, title
+    else:
+       print("⚠️ No chapter found in HTML!")  # Add this
 
-    return None, None
 
 def send_discord_notification(title, chapter_url, chapter_title_cn):
     if not DISCORD_WEBHOOK_URL:
