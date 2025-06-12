@@ -2,7 +2,7 @@ name: Tencent Tracking Bot
 
 on:
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: '*/30 * * * *'  # Runs every 30 minutes
   workflow_dispatch:
 
 jobs:
@@ -11,40 +11,29 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: true
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Chromium
+      - name: Install Chrome & ChromeDriver
         run: |
-          sudo apt update
-          sudo apt install -y chromium-browser
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 
-      - name: Ensure chromedriver is accessible
+      - name: Set environment variables
         run: |
-          if [ ! -f /usr/bin/chromedriver ] || [ "$(readlink -f /usr/bin/chromedriver)" != "$(readlink -f /usr/lib/chromium-browser/chromedriver)" ]; then
-            sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
-          fi
+          echo "DISCORD_WEBHOOK=${{ secrets.DISCORD_WEBHOOK }}" >> $GITHUB_ENV
 
-      - name: Run Tencent Tracking Bot
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Run bot
         run: python manhua_bot.py
-
-      - name: Commit and push updated series.json
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add series.json
-          git diff --cached --quiet || git commit -m "Update series.json [bot]"
-          git push
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
