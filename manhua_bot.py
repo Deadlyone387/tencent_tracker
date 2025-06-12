@@ -2,24 +2,25 @@ import os
 import json
 import time
 import requests
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
+from googletrans import Translator
 
-# Load Discord Webhook URL from environment variable
+# Load Discord Webhook URL from environment
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
-# Load series list from JSON
+translator = Translator()
+
 def load_series():
     with open("series.json", "r", encoding="utf-8") as f:
         return json.load(f)
 
-# Save updated chapter URLs back to JSON
 def save_series(series):
     with open("series.json", "w", encoding="utf-8") as f:
         json.dump(series, f, ensure_ascii=False, indent=2)
 
-# Scrape Tencent Comics for the latest chapter
 def get_latest_chapter_tencent(url):
     options = Options()
     options.add_argument("--headless")
@@ -34,41 +35,51 @@ def get_latest_chapter_tencent(url):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    # Find first chapter link (latest)
     chapter = soup.select_one("a.comic-chapter__item")
     if chapter:
         href = chapter.get("href", "")
-        return "https://ac.qq.com" + href, chapter.get_text(strip=True)
+        title = chapter.get_text(strip=True)
+        return "https://ac.qq.com" + href, title
 
     return None, None
 
-# Send a styled Discord embed notification
-def send_discord_notification(title, chapter_url, chapter_title):
+def send_discord_notification(title, chapter_url, chapter_title_cn):
     if not DISCORD_WEBHOOK_URL:
         print("❌ DISCORD_WEBHOOK_URL not set.")
         return
 
+    # Translate chapter title
+    try:
+        translated_title = translator.translate(chapter_title_cn, src='zh-cn', dest='en').text
+    except Exception as e:
+        print(f"⚠️ Translation failed: {e}")
+        translated_title = chapter_title_cn
+
+    # Add release timestamp
+    release_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+
     embed = {
         "title": "📢 Tencent Tracking Bot",
-        "description": f"**New chapter released for _{title}_!**\n\n📖 **[{chapter_title}]({chapter_url})**",
+        "description": (
+            f"**New chapter released for _{title}_!**\n\n"
+            f"📖 **[{translated_title}]({chapter_url})**\n"
+            f"🕒 Released: `{release_time}`"
+        ),
         "color": 0x1abc9c,
         "thumbnail": {
             "url": "https://upload.wikimedia.org/wikipedia/commons/5/55/Tencent_Logo.png"
         },
         "footer": {
-            "text": "Powered by Tencent Tracking Bot • Updates every 10 minutes"
+            "text": "Powered by Tencent Tracking Bot • Auto-translated"
         }
     }
 
-    data = { "embeds": [embed] }
-
-    response = requests.post(DISCORD_WEBHOOK_URL, json=data)
+    response = requests.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]})
     if response.status_code != 204:
         print(f"⚠️ Discord message failed: {response.status_code} {response.text}")
     else:
         print(f"✅ Notification sent for {title}")
 
-# Main logic
 def main():
     series = load_series()
     updated = False
@@ -81,11 +92,11 @@ def main():
         url = entry["url"]
         print(f"🔍 Checking {title}...")
 
-        latest_url, chapter_name = get_latest_chapter_tencent(url)
+        latest_url, chapter_title = get_latest_chapter_tencent(url)
 
         if latest_url and latest_url != entry.get("latest", ""):
-            print(f"🆕 New chapter found: {chapter_name}")
-            send_discord_notification(title, latest_url, chapter_name)
+            print(f"🆕 New chapter found: {chapter_title}")
+            send_discord_notification(title, latest_url, chapter_title)
             entry["latest"] = latest_url
             updated = True
         else:
