@@ -1,9 +1,9 @@
 name: Tencent Tracking Bot
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '*/10 * * * *'  # runs every 10 minutes
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
 
 jobs:
   run-bot:
@@ -11,25 +11,40 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Chromium and Chromedriver via snap
+      - name: Install Chromium
         run: |
-          sudo snap install chromium
-          sudo ln -s /snap/bin/chromium.chromedriver /usr/bin/chromedriver || true
-          sudo ln -s /snap/bin/chromium /usr/bin/chromium || true
+          sudo apt update
+          sudo apt install -y chromium-browser
 
-      - name: Run the bot
+      - name: Ensure chromedriver is accessible
+        run: |
+          if [ ! -f /usr/bin/chromedriver ] || [ "$(readlink -f /usr/bin/chromedriver)" != "$(readlink -f /usr/lib/chromium-browser/chromedriver)" ]; then
+            sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+          fi
+
+      - name: Run Tencent Tracking Bot
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: python manhua_bot.py
+
+      - name: Commit and push updated series.json
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add series.json
+          git diff --cached --quiet || git commit -m "Update series.json [bot]"
+          git push
