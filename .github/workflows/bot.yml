@@ -20,7 +20,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install selenium beautifulsoup4 requests
+        pip install selenium beautifulsoup4 requests googletrans==4.0.0-rc1
         sudo apt-get update
         sudo apt-get install -y chromium-chromedriver
         sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin
