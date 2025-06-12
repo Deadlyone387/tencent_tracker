@@ -73,7 +73,7 @@ def send_discord_notification(title, chapter_url, chapter_title, thumbnail_url):
 
     if TRANSLATE:
         try:
-            translated = GoogleTranslator(source='zh', target='en').translate(chapter_title)
+            translated = GoogleTranslator(source='zh-CN', target='en').translate(chapter_title)
             embed["fields"] = [{
                 "name": "Translated Title",
                 "value": translated,
