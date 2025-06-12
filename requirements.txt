@@ -1,5 +1,4 @@
-selenium
-webdriver-manager
-beautifulsoup4
+selenium==4.21.0
 requests
-deep-translator
+beautifulsoup4
+googletrans==4.0.0rc1
