@@ -1,31 +1,23 @@
-name: Tencent Tracker Bot
+name: Run Tencent Bot
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # ⏰ Runs every 10 minutes
-  workflow_dispatch:        # ▶️ Allows manual run from GitHub UI
+    - cron: "*/10 * * * *"  # every 10 minutes
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        pip install selenium beautifulsoup4 requests googletrans==4.0.0-rc1
-        sudo apt-get update
-        sudo apt-get install -y chromium-chromedriver
-        sudo cp /usr/lib/chromium-browser/chromedriver /usr/bin
-
-    - name: Run bot
-      env:
-        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-      run: python manhua_bot.py
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install selenium beautifulsoup4 requests googletrans==4.0.0-rc1
+      - name: Run the bot
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python manhua_bot.py
