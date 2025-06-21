@@ -84,7 +84,7 @@ def main():
 
         title = item["title"]
         url = item["url"]
-        last_chapter = item["last_chapter"]
+        last_chapter = item.get("last_chapter", "")
         thumbnail = item.get("thumbnail", "")
 
         print(f"🔍 Checking {title}...")
