@@ -23,6 +23,8 @@ def write_latest_chapters(series):
             chapter_title = item.get("last_chapter_title", "Unknown")
             f.write(f"{item['title']}: {chapter_title}\n")
 
+import re
+
 def get_latest_chapter_tencent(url):
     options = Options()
     options.add_argument("--headless")
@@ -35,23 +37,30 @@ def get_latest_chapter_tencent(url):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    # Find all chapter links matching the URL pattern
+    # Find all chapter links with the known pattern
     chapter_links = soup.select("a[href^='/ComicView/index/id/']")
-    if chapter_links:
-        # Assume first in list is the latest
-        latest = chapter_links[0]
-        href = latest.get("href")
-        title = latest.get("title") or latest.text.strip()
-        if not title:
-            print("⚠️ Chapter found but title is empty. Using fallback.")
-            title = "Untitled Chapter"
-        return {
-            "url": "https://ac.qq.com" + href,
-            "title": title
-        }
+    latest_chapter = None
+    highest_cid = -1
+
+    for link in chapter_links:
+        href = link.get("href", "")
+        title = link.get("title") or link.text.strip()
+        match = re.search(r"/cid/(\d+)", href)
+        if match:
+            cid = int(match.group(1))
+            if cid > highest_cid:
+                highest_cid = cid
+                latest_chapter = {
+                    "url": "https://ac.qq.com" + href,
+                    "title": title.strip() or "Untitled Chapter"
+                }
+
+    if latest_chapter:
+        return latest_chapter
 
     print("⚠️ No chapter found in HTML after trying all selectors!")
     return None
+
 
 
 def send_discord_notification(series_title, chapter_title, chapter_url, thumbnail):
