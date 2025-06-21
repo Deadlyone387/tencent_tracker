@@ -38,7 +38,7 @@ def get_latest_chapter_tencent(url):
     chapter = soup.select_one("div.chapter__list-box a[target][href*='/ComicView/index/id/']")
     if chapter:
         href = chapter.get("href")
-        title = chapter.text.strip()
+        title = chapter.get("title") or chapter.text.strip()
         if not title:
             print("⚠️ Chapter found but title is empty. Using fallback.")
             title = "Untitled Chapter"
