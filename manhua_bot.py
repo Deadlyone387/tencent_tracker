@@ -36,9 +36,7 @@ def get_latest_chapter_tencent(url):
     driver.quit()
 
     selectors = [
-        "div.chapter__list-box a[target][href*='/ComicView/index/id/']",
-        "a.comic-chapter__item",
-        "ul.chapter-page-all li a[href*='/ComicView/index/id/']"
+        "a[target][href^='/ComicView/index/id/'][title]"
     ]
 
     for selector in selectors:
