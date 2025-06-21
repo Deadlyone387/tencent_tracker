@@ -31,24 +31,31 @@ def get_latest_chapter_tencent(url):
     driver = webdriver.Chrome(options=options)
 
     driver.get(url)
-    time.sleep(3)
+    time.sleep(5)
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    chapter = soup.select_one("div.chapter__list-box a[target][href*='/ComicView/index/id/']")
-    if chapter:
-        href = chapter.get("href")
-        title = chapter.get("title") or chapter.text.strip()
-        if not title:
-            print("⚠️ Chapter found but title is empty. Using fallback.")
-            title = "Untitled Chapter"
-        return {
-            "url": "https://ac.qq.com" + href,
-            "title": title
-        }
-    else:
-        print("⚠️ No chapter found in HTML!")
-        return None
+    selectors = [
+        "div.chapter__list-box a[target][href*='/ComicView/index/id/']",
+        "a.comic-chapter__item",
+        "ul.chapter-page-all li a[href*='/ComicView/index/id/']"
+    ]
+
+    for selector in selectors:
+        chapter = soup.select_one(selector)
+        if chapter:
+            href = chapter.get("href")
+            title = chapter.get("title") or chapter.text.strip()
+            if not title:
+                print("⚠️ Chapter found but title is empty. Using fallback.")
+                title = "Untitled Chapter"
+            return {
+                "url": "https://ac.qq.com" + href,
+                "title": title
+            }
+
+    print("⚠️ No chapter found in HTML after trying all selectors!")
+    return None
 
 def send_discord_notification(series_title, chapter_title, chapter_url, thumbnail):
     if not DISCORD_WEBHOOK_URL:
