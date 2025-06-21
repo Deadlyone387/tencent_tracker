@@ -29,10 +29,13 @@ def get_latest_chapter_tencent(url):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    chapter = soup.select_one('a[href^="/ComicView/index/id/"]')
+    chapter = soup.select_one("a.comic-chapter__item")
     if chapter:
         href = chapter.get("href")
         title = chapter.text.strip()
+        if not title:
+            print("⚠️ Chapter found but title is empty. Using fallback.")
+            title = "Untitled Chapter"
         return {
             "url": "https://ac.qq.com" + href,
             "title": title
