@@ -17,6 +17,12 @@ def save_series(series):
     with open("series.json", "w", encoding="utf-8") as f:
         json.dump(series, f, ensure_ascii=False, indent=2)
 
+def write_latest_chapters(series):
+    with open("latest_chapters.txt", "w", encoding="utf-8") as f:
+        for item in series:
+            chapter_title = item.get("last_chapter_title", "Unknown")
+            f.write(f"{item['title']}: {chapter_title}\n")
+
 def get_latest_chapter_tencent(url):
     options = Options()
     options.add_argument("--headless")
@@ -92,12 +98,15 @@ def main():
             print(f"📢 New chapter for {title}: {result['title']}")
             send_discord_notification(title, result['title'], result['url'], thumbnail)
             item["last_chapter"] = result["url"]
+            item["last_chapter_title"] = result["title"]
             updated = True
         else:
             print(f"✅ No update for {title}")
 
     if updated:
         save_series(series)
+
+    write_latest_chapters(series)
 
 if __name__ == "__main__":
     main()
