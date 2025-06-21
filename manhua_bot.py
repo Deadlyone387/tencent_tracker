@@ -6,7 +6,6 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
-from deep_translator import GoogleTranslator
 
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK")
 
@@ -42,30 +41,22 @@ def get_latest_chapter_tencent(url):
         print("⚠️ No chapter found in HTML!")
         return None
 
-def translate_text(text):
-    try:
-        return GoogleTranslator(source='zh-CN', target='en').translate(text)
-    except Exception as e:
-        print(f"⚠️ Translation failed: {e}")
-        return text
-
-def send_discord_notification(series_title, chapter_title_cn, chapter_url, thumbnail):
+def send_discord_notification(series_title, chapter_title, chapter_url, thumbnail):
     if not DISCORD_WEBHOOK_URL:
         print("❌ DISCORD_WEBHOOK is not set in environment variables.")
         return
 
-    translated_title = translate_text(chapter_title_cn)
     release_time = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     embed = {
         "title": f"📢 New Chapter for {series_title}!",
         "description": (
-            f"**[{translated_title}]({chapter_url})**\n"
+            f"**[{chapter_title}]({chapter_url})**\n"
             f"🕒 Released: `{release_time}`"
         ),
         "color": 0x1abc9c,
         "thumbnail": {"url": thumbnail},
-        "footer": {"text": "Auto-translated from Chinese"}
+        "footer": {"text": "Tencent Tracking Bot"}
     }
 
     response = requests.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]})
