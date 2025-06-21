@@ -65,13 +65,21 @@ def send_discord_notification(series_title, chapter_title, chapter_url, thumbnai
     embed = {
         "title": f"📢 New Chapter for {series_title}!",
         "description": (
-            f"**[{chapter_title}]({chapter_url})**\n"
+            f"**{chapter_title}**\n"
+            f"[Read here]({chapter_url})\n"
             f"🕒 Released: `{release_time}`"
         ),
         "color": 0x1abc9c,
         "thumbnail": {"url": thumbnail},
         "footer": {"text": "Tencent Tracking Bot"}
     }
+
+    response = requests.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]})
+    if response.status_code != 204:
+        print(f"⚠️ Discord request failed: {response.status_code} {response.text}")
+    else:
+        print(f"✅ Notification sent for {series_title}")
+
 
     response = requests.post(DISCORD_WEBHOOK_URL, json={"embeds": [embed]})
     if response.status_code != 204:
