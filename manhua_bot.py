@@ -35,11 +35,13 @@ def get_latest_chapter_tencent(url):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    # Find the latest chapter by checking the chapter list directly
-    chapter_link = soup.select_one(".chapter__list-box a[href^='/ComicView/index/id/']")
-    if chapter_link:
-        href = chapter_link.get("href")
-        title = chapter_link.get("title") or chapter_link.text.strip()
+    # Find all chapter links matching the URL pattern
+    chapter_links = soup.select("a[href^='/ComicView/index/id/']")
+    if chapter_links:
+        # Assume first in list is the latest
+        latest = chapter_links[0]
+        href = latest.get("href")
+        title = latest.get("title") or latest.text.strip()
         if not title:
             print("⚠️ Chapter found but title is empty. Using fallback.")
             title = "Untitled Chapter"
@@ -50,6 +52,7 @@ def get_latest_chapter_tencent(url):
 
     print("⚠️ No chapter found in HTML after trying all selectors!")
     return None
+
 
 def send_discord_notification(series_title, chapter_title, chapter_url, thumbnail):
     if not DISCORD_WEBHOOK_URL:
