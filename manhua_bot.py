@@ -35,7 +35,7 @@ def get_latest_chapter_tencent(url):
     soup = BeautifulSoup(driver.page_source, "html.parser")
     driver.quit()
 
-    chapter = soup.select_one("a.comic-chapter__item")
+    chapter = soup.select_one("div.chapter__list-box a[target][href*='/ComicView/index/id/']")
     if chapter:
         href = chapter.get("href")
         title = chapter.text.strip()
